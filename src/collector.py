@@ -45,11 +45,75 @@ def fetch_lotto_data(round_no):
         # Date
         date_str = soup.find('p', class_='desc').text.replace('추첨', '').strip() # (2023년 01월 01일)
         
+        # Parse Prize Data (New)
+        prizes = []
+        meta = {'auto': 0, 'manual': 0, 'semi_auto': 0}
+        
+        # Finding the prize table
+        # Usually checking class 'tbl_data tbl_data_col' or finding caption
+        tables = soup.find_all('table', class_='tbl_data')
+        prize_table = None
+        for t in tables:
+            if "등위별 총 당첨금액" in t.text:
+                prize_table = t
+                break
+        
+        if prize_table:
+            tbody = prize_table.find('tbody')
+            rows = tbody.find_all('tr')
+            # Rows: 1st, 2nd, 3rd, 4th, 5th
+            for idx, row in enumerate(rows):
+                rank = idx + 1
+                cols = row.find_all('td')
+                
+                # Column indices change because of rowspan in first row
+                # Row 1 (1st): [Rank, Total, Count, PerPerson, Criteria, Remarks(rowspan)]
+                # Row 2-5: [Rank, Total, Count, PerPerson, Criteria] (Remarks is shared)
+                
+                if rank == 1:
+                    # 1st place row
+                    # cols[1]: Total, cols[2]: Count, cols[3]: PerPerson
+                    total = int(cols[1].text.replace(',', '').replace('원', '').strip())
+                    count = int(cols[2].text.replace(',', '').strip())
+                    per_person = int(cols[3].text.replace(',', '').replace('원', '').strip())
+                    
+                    # Parse Remarks for Auto/Manual
+                    # The remark cell is the last one (index 5)
+                    remark_cell = cols[5]
+                    remark_text = remark_cell.text
+                    
+                    # Example text: "1등자동10수동2" or structured with <br>
+                    # Simple parsing: look for "자동n", "수동n", "반자동n"
+                    # Or use regex
+                    import re
+                    auto_match = re.search(r'자동(\d+)', remark_text)
+                    manual_match = re.search(r'수동(\d+)', remark_text)
+                    semi_match = re.search(r'반자동(\d+)', remark_text)
+                    
+                    meta['auto'] = int(auto_match.group(1)) if auto_match else 0
+                    meta['manual'] = int(manual_match.group(1)) if manual_match else 0
+                    meta['semi_auto'] = int(semi_match.group(1)) if semi_match else 0
+                    
+                else:
+                    # Other rows
+                    total = int(cols[1].text.replace(',', '').replace('원', '').strip())
+                    count = int(cols[2].text.replace(',', '').strip())
+                    per_person = int(cols[3].text.replace(',', '').replace('원', '').strip())
+                
+                prizes.append({
+                    'rank': rank,
+                    'total': total,
+                    'count': count,
+                    'per_person': per_person
+                })
+
         return {
             'round_no': round_no,
             'nums': nums,
             'bonus': bonus,
-            'date': date_str
+            'date': date_str,
+            'prizes': prizes,
+            'meta': meta
         }
 
     except Exception as e:
@@ -62,8 +126,15 @@ def save_to_db(data):
     cursor = conn.cursor()
     try:
         cursor.execute('''
-            INSERT IGNORE INTO history (round_no, num1, num2, num3, num4, num5, num6, bonus, draw_date)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT IGNORE INTO history (
+                round_no, num1, num2, num3, num4, num5, num6, bonus, draw_date, 
+                first_prize_auto, first_prize_manual, first_prize_semi_auto
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                first_prize_auto = VALUES(first_prize_auto),
+                first_prize_manual = VALUES(first_prize_manual),
+                first_prize_semi_auto = VALUES(first_prize_semi_auto)
         ''', (
             data['round_no'],
             data['nums'][0],
@@ -73,23 +144,54 @@ def save_to_db(data):
             data['nums'][4],
             data['nums'][5],
             data['bonus'],
-            data['date']
+            data['date'],
+            data.get('meta', {}).get('auto', 0),
+            data.get('meta', {}).get('manual', 0),
+            data.get('meta', {}).get('semi_auto', 0)
         ))
+        
+        # Save Prizes
+        if 'prizes' in data:
+            for p in data['prizes']:
+                cursor.execute('''
+                    INSERT INTO prizes (round_no, rank_no, total_price, winner_count, win_amount)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON DUPLICATE KEY UPDATE
+                        total_price = VALUES(total_price),
+                        winner_count = VALUES(winner_count),
+                        win_amount = VALUES(win_amount)
+                ''', (
+                    data['round_no'],
+                    p['rank'],
+                    p['total'],
+                    p['count'],
+                    p['per_person']
+                ))
+
         conn.commit()
-        print(f"Saved round {data['round_no']}")
+        print(f"Saved round {data['round_no']} (Win Info + Prizes)")
     except Exception as e:
         print(f"Error saving round {data['round_no']}: {e}")
     finally:
         conn.close()
 
 def get_existing_rounds():
-    """Retrieves all recorded round numbers from the database."""
+    """Retrieves rounds that have both history and prize data recorded."""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT round_no FROM history')
-    rounds = {row[0] for row in cursor.fetchall()}
+    # Check prizes table to ensure we have full data
+    # We treat a round as 'existing' only if it is in history AND has prize info.
+    # Since prizes table has FK to history, checking prizes is sufficient (usually).
+    # But to be safe? yes, prizes table.
+    try:
+        cursor.execute('SELECT DISTINCT round_no FROM prizes')
+        prizes_rounds = {row['round_no'] for row in cursor.fetchall()}
+    except Exception:
+        # If table doesn't exist or error, assume empty
+        prizes_rounds = set()
+        
     conn.close()
-    return rounds
+    return prizes_rounds
 
 def run_collector(start_round=1, end_round=1200):
     """Main function to run the collector agent."""
@@ -106,6 +208,9 @@ def run_collector(start_round=1, end_round=1200):
         print(f"Found {len(missing_rounds)} missing rounds in range {start_round}-{end_round}. Starting fetch...")
         for round_no in missing_rounds:
             print(f"Fetching round {round_no}...")
+            # Throttling per request (3~5s)
+            time.sleep(random.uniform(3.0, 5.0))
+            
             data = fetch_lotto_data(round_no)
             if data:
                 save_to_db(data)

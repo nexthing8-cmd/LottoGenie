@@ -43,6 +43,42 @@
     <p>저장된 당첨 내역이 없습니다.</p>
     {% endif %}
 
+    {% if prizes %}
+    <h3>당첨금 정보</h3>
+    <table style="margin-bottom: 2rem;">
+        <thead>
+            <tr>
+                <th>순위</th>
+                <th>총 당첨금액</th>
+                <th>당첨자 수</th>
+                <th>1게임당 당첨금액</th>
+                <th>비고</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for prize in prizes %}
+            <tr>
+                <td>{{ prize.rank_no }}등</td>
+                <td>{{ "{:,}".format(prize.total_price) }}원</td>
+                <td>{{ "{:,}".format(prize.winner_count) }}명</td>
+                <td>{{ "{:,}".format(prize.win_amount) }}원</td>
+                <td>
+                    {% if prize.rank_no == 1 %}
+                        {% if latest_result.first_prize_auto or latest_result.first_prize_manual %}
+                            (자동 {{ latest_result.first_prize_auto }}, 수동 {{ latest_result.first_prize_manual }}, 반자동 {{ latest_result.first_prize_semi_auto }})
+                        {% else %}
+                            -
+                        {% endif %}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
     <h2>예측 번호 생성</h2>
     {% if user %}
     <p>아래 버튼을 클릭하여 최신 데이터를 기반으로 새로운 예측 번호를 생성하세요.</p>

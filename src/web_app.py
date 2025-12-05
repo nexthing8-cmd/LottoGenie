@@ -77,6 +77,12 @@ async def read_root(request: Request):
     cursor.execute('SELECT * FROM history ORDER BY round_no DESC LIMIT 1')
     latest_result = cursor.fetchone()
     
+    prizes = []
+    if latest_result:
+        # Get prizes for this round
+        cursor.execute('SELECT * FROM prizes WHERE round_no = %s ORDER BY rank_no ASC', (latest_result['round_no'],))
+        prizes = cursor.fetchall()
+
     # Get next round prediction if exists
     # If user is logged in, show their predictions.
     recent_predictions = []
@@ -89,6 +95,7 @@ async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {
         "request": request,
         "latest_result": latest_result,
+        "prizes": prizes,
         "predictions": recent_predictions,
         "user": user
     })

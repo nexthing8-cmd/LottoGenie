@@ -90,6 +90,37 @@ def init_db():
                     FOREIGN KEY (round_no) REFERENCES history(round_no)
                 )
             ''')
+
+            # Table 5: prizes
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS prizes (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    round_no INT,
+                    rank_no INT,
+                    total_price BIGINT,
+                    winner_count INT,
+                    win_amount BIGINT,
+                    FOREIGN KEY (round_no) REFERENCES history(round_no)
+                )
+            ''')
+            
+            # Alter history table to add auto/manual/semiauto columns if not exist
+            # Note: Checking column existence in MySQL/MariaDB inside python block without explicit check query is tricky.
+            # Usually "ADD COLUMN IF NOT EXISTS" is supported in MariaDB 10.2+. 
+            # If standard MySQL, might need try-except.
+            # Assuming MariaDB per context.
+            try:
+                cursor.execute("ALTER TABLE history ADD COLUMN first_prize_auto INT DEFAULT 0")
+            except Exception:
+                pass # Exists
+            try:
+                cursor.execute("ALTER TABLE history ADD COLUMN first_prize_manual INT DEFAULT 0")
+            except Exception:
+                pass
+            try:
+                cursor.execute("ALTER TABLE history ADD COLUMN first_prize_semi_auto INT DEFAULT 0")
+            except Exception:
+                pass
         conn.commit()
         print(f"Database initialized at {os.getenv('DB_HOST')}:{os.getenv('DB_NAME')}")
     finally:
