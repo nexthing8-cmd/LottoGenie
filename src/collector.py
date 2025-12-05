@@ -120,5 +120,88 @@ def run_collector(start_round=1, end_round=1200):
     # or make it optional. For now, let's remove it to strictly follow "load --from --to".
     pass
 
+def save_store_to_db(round_no, store_name, choice_type, address):
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            INSERT INTO winning_stores (round_no, store_name, choice_type, address)
+            VALUES (%s, %s, %s, %s)
+        ''', (round_no, store_name, choice_type, address))
+        conn.commit()
+    except Exception as e:
+        print(f"Error saving store for round {round_no}: {e}")
+    finally:
+        conn.close()
+
+import time
+import random
+
+def collect_winning_stores(start_round, end_round):
+    """Collects 1st place winning stores."""
+    print(f"Collecting winning stores for rounds {start_round}-{end_round}...")
+    
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+    
+    for round_no in range(start_round, end_round + 1):
+        url = f"https://dhlottery.co.kr/store.do?method=topStore&pageGubun=L645&drwNo={round_no}"
+        try:
+            # Random delay to be polite
+            time.sleep(random.uniform(0.5, 2.0))
+            
+            response = requests.get(url, headers=headers, timeout=10)
+            # encoding might need to be set manually if korean chars are broken, usually utf-8 or euc-kr
+            # dhlottery usually uses euc-kr. let's check content encoding or just try auto.
+            # response.encoding = 'euc-kr' # often needed for korean sites
+            
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Find the first group_content (1st place)
+            group_contents = soup.find_all('div', class_='group_content')
+            if not group_contents:
+                print(f"No store data found for round {round_no}")
+                continue
+                
+            first_place_group = group_contents[0]
+            
+            # Additional check if it's indeed 1st place
+            title = first_place_group.find('h4', class_='title')
+            if not title or "1등 배출점" not in title.text:
+                # Try finding by text if order is not guaranteed, but usually it is.
+                print(f"Warning: Unexpected structure for round {round_no}. Skipping.")
+                continue
+
+            table = first_place_group.find('table', class_='tbl_data')
+            if not table:
+                continue
+                
+            tbody = table.find('tbody')
+            rows = tbody.find_all('tr')
+            
+            count = 0
+            for row in rows:
+                cols = row.find_all('td')
+                if len(cols) < 4:
+                    continue
+                
+                # cols[1]: Name, cols[2]: Type, cols[3]: Address
+                store_name = cols[1].text.strip()
+                choice_type = cols[2].text.strip().replace('\n', '').replace('\r', '').replace('\t', '')
+                address = cols[3].text.strip()
+                
+                # Check for "Empty" row (sometimes happens if no data)
+                if "조회 결과가 없습니다" in store_name:
+                    continue
+
+                save_store_to_db(round_no, store_name, choice_type, address)
+                count += 1
+            
+            print(f"Round {round_no}: Saved {count} stores.")
+            
+        except Exception as e:
+            print(f"Error fetching stores for round {round_no}: {e}")
+
 if __name__ == "__main__":
     run_collector()

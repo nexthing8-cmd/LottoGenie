@@ -78,6 +78,18 @@ def init_db():
                     created_at VARCHAR(30)
                 )
             ''')
+
+            # Table 4: winning_stores
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS winning_stores (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    round_no INT,
+                    store_name VARCHAR(100),
+                    choice_type VARCHAR(20),
+                    address VARCHAR(255),
+                    FOREIGN KEY (round_no) REFERENCES history(round_no)
+                )
+            ''')
         conn.commit()
         print(f"Database initialized at {os.getenv('DB_HOST')}:{os.getenv('DB_NAME')}")
     finally:

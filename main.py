@@ -1,5 +1,5 @@
 import argparse
-from src.collector import run_collector
+from src.collector import run_collector, collect_winning_stores
 from src.auditor import run_auditor
 from src.analyst import run_analyst
 # from src.web_app import run_web_server # Will implement later
@@ -12,6 +12,11 @@ def main():
     load_parser = subparsers.add_parser("load", help="Load history data")
     load_parser.add_argument("--from", dest="start_round", type=int, help="Start round (optional)")
     load_parser.add_argument("--to", dest="end_round", type=int, help="End round (optional)")
+
+    # load_stores --from <n> --to <n>
+    store_parser = subparsers.add_parser("load_stores", help="Load winning stores")
+    store_parser.add_argument("--from", dest="start_round", type=int, help="Start round (optional)")
+    store_parser.add_argument("--to", dest="end_round", type=int, help="End round (optional)")
     
     # predict --round <n>
     predict_parser = subparsers.add_parser("predict", help="Generate predictions")
@@ -50,6 +55,11 @@ def main():
         end = args.end_round if args.end_round else 2000 # Sufficiently large for now
         
         run_collector(start_round=start, end_round=end)
+
+    elif args.command == "load_stores":
+        start = args.start_round if args.start_round else 1
+        end = args.end_round if args.end_round else 1200
+        collect_winning_stores(start_round=start, end_round=end)
         
     elif args.command == "predict":
         # Analyst currently auto-detects next round, but we might want to support forcing a round?

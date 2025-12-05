@@ -342,3 +342,24 @@ LottoGenie의 주요 MVP 기능 개발이 모두 완료되었습니다. AI 예�
 ### 📂 수정된 파일
 *   `src/web_app.py`: 파라미터 처리 및 SQL 쿼리 로직 변경.
 *   `templates/history.html`: 검색바 및 Limit 선택 UI 추가, 페이지네이션 링크 로직 수정.
+
+---
+
+## 🏪 1등 당첨 지점 데이터 구축 (2025-12-06)
+
+1등 당첨 판매점 정보를 수집하고 DB화했습니다.
+
+### 1. DB 스키마 추가
+*   `winning_stores` 테이블 생성 (round_no, store_name, choice_type, address).
+
+### 2. 수집기 구현
+*   동행복권 당첨점 페이지 크롤링 로직 추가 (`src/collector.py`).
+*   BeautifulSoup을 사용하여 상호명, 자동/수동 여부, 주소 추출.
+
+### 3. CLI 기능 추가
+*   `python main.py load_stores --from 1 --to 1200` 명령어로 대량 데이터 적재 가능.
+
+### 📂 수정된 파일
+*   `src/database.py`: 테이블 정의 추가.
+*   `src/collector.py`: `collect_winning_stores` 함수 구현.
+*   `main.py`: `load_stores` 커맨드 추가.
