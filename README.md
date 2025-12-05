@@ -45,13 +45,21 @@ LottoGenie는 다음과 같은 주요 컴포넌트로 구성되어 있습니다:
 
 ### 1. 데이터 수집 (Load)
 
-과거 당첨 번호 데이터를 수집합니다.
+과거 당첨 번호 데이터 및 당첨금 정보를 수집합니다.
 
 ```bash
 python main.py load --from 1 --to 1200
 ```
 
-### 2. 모델 학습 (Train)
+### 2. 1등 당첨점 수집 (Load Stores) - NEW
+
+1등 당첨 판매점 정보를 수집합니다.
+
+```bash
+python main.py load_stores --from 1 --to 1200
+```
+
+### 3. 모델 학습 (Train)
 
 최신 데이터를 기반으로 AI 모델을 학습/파인튜닝합니다.
 
@@ -59,7 +67,7 @@ python main.py load --from 1 --to 1200
 python main.py train
 ```
 
-### 3. 번호 예측 (Predict)
+### 4. 번호 예측 (Predict)
 
 학습된 모델을 사용하여 예측 번호를 생성합니다.
 
@@ -67,7 +75,7 @@ python main.py train
 python main.py predict
 ```
 
-### 4. 결과 확인 (Check)
+### 5. 결과 확인 (Check)
 
 예측한 번호의 당첨 여부를 확인합니다.
 
@@ -75,7 +83,7 @@ python main.py predict
 python main.py check
 ```
 
-### 5. 웹 앱 실행 (Web - 개발 모드)
+### 6. 웹 앱 실행 (Web - 개발 모드)
 
 웹 대시보드를 개발 모드로 실행합니다.
 
@@ -85,7 +93,9 @@ python main.py web
 
 웹 브라우저에서 `http://localhost:8000`으로 접속하여 사용할 수 있습니다.
 
-### 6. 프로덕션 배포 (Production)
+- **당첨금 정보 표시**: 최신 회차의 등수별 당첨금, 당첨자 수, 1등 당첨 유형(자동/수동) 등을 확인할 수 있습니다.
+
+### 7. 프로덕션 배포 (Production)
 
 `gunicorn`을 사용하여 고성능 모드로 서버를 실행합니다.
 
@@ -93,7 +103,7 @@ python main.py web
 ./start.sh
 ```
 
-### 7. Docker 배포
+### 8. Docker 배포
 
 Docker Compose를 사용하여 간편하게 실행할 수 있습니다.
 
@@ -101,8 +111,9 @@ Docker Compose를 사용하여 간편하게 실행할 수 있습니다.
 # 실행
 docker compose up -d
 
-# 데이터 초기화 (최초 1회)
+# 데이터 초기화 (최초 1회 - 당첨정보 및 당첨점)
 docker compose run web python main.py load --from 1 --to 1200
+docker compose run web python main.py load_stores --from 1 --to 1200
 ```
 
 ## 주간 자동화
