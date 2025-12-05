@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로또지니 대시보드</title>
+  <link rel="icon" type="image/png" href="/static/favicon.png">
+  <style>
+    body {
+      font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f9;
+      color: #333;
+    }
+
+    header {
+      background-color: #6200ea;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .auth-links {
+      position: absolute;
+      right: 1rem;
+      top: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .auth-links a {
+      color: white;
+      text-decoration: none;
+      margin-left: 10px;
+      font-weight: bold;
+    }
+
+    nav {
+      background-color: #3700b3;
+      padding: 0.5rem;
+      text-align: center;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      margin: 0 1rem;
+      font-weight: bold;
+    }
+
+    nav a:hover {
+      text-decoration: underline;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      border-bottom: 2px solid #6200ea;
+      padding-bottom: 0.5rem;
+    }
+
+    .result-card {
+      background: #ede7f6;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+
+    .ball {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      line-height: 40px;
+      border-radius: 50%;
+      text-align: center;
+      margin: 0 5px;
+      font-weight: 900;
+      font-size: 18px;
+      color: white;
+      text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.4);
+      box-shadow: inset -5px -5px 10px rgba(0, 0, 0, 0.2), 2px 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .ball-yellow {
+      background: #fbc400;
+    }
+
+    .ball-blue {
+      background: #69c8f2;
+    }
+
+    .ball-red {
+      background: #ff7272;
+    }
+
+    .ball-gray {
+      background: #aaaaaa;
+    }
+
+    .ball-green {
+      background: #b0d840;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    th,
+    td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #f4f4f9;
+    }
+
+    .btn {
+      display: inline-block;
+      background: #6200ea;
+      color: white;
+      padding: 0.5rem 1rem;
+      text-decoration: none;
+      border-radius: 4px;
+      cursor: pointer;
+      border: none;
+      font-size: 1rem;
+    }
+
+    .btn:hover {
+      background: #3700b3;
+    }
+
+    .btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>🧞‍♂️ 로또지니 (LottoGenie)</h1>
+    <div class="auth-links">
+      {% if user %}
+      <span>{{ user.username }}님 환영합니다!</span>
+      <a href="#" onclick="logout()">로그아웃</a>
+      {% else %}
+      <a href="/login">로그인</a>
+      <a href="/register">회원가입</a>
+      {% endif %}
+    </div>
+  </header>
+
+  <nav>
+    <a href="/">대시보드</a>
+    <a href="/analysis">분석</a>
+    <a href="/history">당첨내역</a>
+    {% if user %}
+    <a href="/mypage">마이페이지</a>
+    {% endif %}
+  </nav>
+
+  {% macro get_ball_class(n) %}
+  {% if n <= 10 %}ball-yellow{% elif n <=20 %}ball-blue{% elif n <=30 %}ball-red{% elif n <=40 %}ball-gray{% else
+    %}ball-green{% endif %} {% endmacro %} <div class="container">
+    <h2>최신 당첨 결과</h2>
+    {% if latest_result %}
+    <div class="result-card">
+      <h3>{{ latest_result['round_no'] }}회 ({{ latest_result['draw_date'] }})</h3>
+      <div>
+        <span class="ball {{ get_ball_class(latest_result['num1']) }}">{{ latest_result['num1'] }}</span>
+        <span class="ball {{ get_ball_class(latest_result['num2']) }}">{{ latest_result['num2'] }}</span>
+        <span class="ball {{ get_ball_class(latest_result['num3']) }}">{{ latest_result['num3'] }}</span>
+        <span class="ball {{ get_ball_class(latest_result['num4']) }}">{{ latest_result['num4'] }}</span>
+        <span class="ball {{ get_ball_class(latest_result['num5']) }}">{{ latest_result['num5'] }}</span>
+        <span class="ball {{ get_ball_class(latest_result['num6']) }}">{{ latest_result['num6'] }}</span>
+        +
+        <span class="ball {{ get_ball_class(latest_result['bonus']) }}">{{ latest_result['bonus'] }}</span>
+      </div>
+    </div>
+    {% else %}
+    <p>저장된 당첨 내역이 없습니다.</p>
+    {% endif %}
+
+    <h2>예측 번호 생성</h2>
+    {% if user %}
+    <p>아래 버튼을 클릭하여 최신 데이터를 기반으로 새로운 예측 번호를 생성하세요.</p>
+    <button id="genBtn" class="btn" onclick="generatePrediction()">지금 생성하기</button>
+    {% else %}
+    <p>예측 번호를 생성하려면 로그인이 필요합니다.</p>
+    <a href="/login" class="btn">로그인하러 가기</a>
+    {% endif %}
+
+    <h2>최근 예측 내역</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>회차</th>
+          <th>번호</th>
+          <th>상태</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pred in predictions %}
+        <tr>
+          <td>{{ pred['round_no'] }}회</td>
+          <td>
+            <span class="ball {{ get_ball_class(pred['num1']) }}">{{ pred['num1'] }}</span>
+            <span class="ball {{ get_ball_class(pred['num2']) }}">{{ pred['num2'] }}</span>
+            <span class="ball {{ get_ball_class(pred['num3']) }}">{{ pred['num3'] }}</span>
+            <span class="ball {{ get_ball_class(pred['num4']) }}">{{ pred['num4'] }}</span>
+            <span class="ball {{ get_ball_class(pred['num5']) }}">{{ pred['num5'] }}</span>
+            <span class="ball {{ get_ball_class(pred['num6']) }}">{{ pred['num6'] }}</span>
+          </td>
+          <td>{{ pred['rank_val'] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+
+    <script>
+      async function generatePrediction() {
+        if (confirm("새로운 예측 번호를 생성하시겠습니까?")) {
+          const btn = document.getElementById('genBtn');
+          btn.disabled = true;
+          btn.innerText = "생성 중...";
+
+          // Use predict_web endpoint which checks cookie
+          try {
+            const response = await fetch('/predict_web', { method: 'POST' });
+
+            if (response.ok) {
+              const result = await response.json();
+              alert("예측 번호가 생성되었습니다!");
+              location.reload();
+            } else {
+              alert("오류가 발생했습니다. 다시 로그인해주세요.");
+              location.href = '/login';
+            }
+          } catch (e) {
+            console.error(e);
+            alert("서버 연결 오류");
+            btn.disabled = false;
+            btn.innerText = "지금 생성하기";
+          }
+        }
+      }
+
+      function logout() {
+        document.cookie = "access_token=; path=/; max-age=0";
+        location.reload();
+      }
+    </script>
+
+</body>
+
+</html>

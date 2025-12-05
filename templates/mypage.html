@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로또지니 - 마이페이지</title>
+  <link rel="icon" type="image/png" href="/static/favicon.png">
+  <style>
+    body {
+      font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f9;
+      color: #333;
+    }
+
+    header {
+      background-color: #6200ea;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    .auth-buttons a {
+      color: white;
+      text-decoration: none;
+      margin-left: 1rem;
+      font-weight: bold;
+      border: 1px solid white;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+    }
+
+    .auth-buttons a:hover {
+      background-color: white;
+      color: #6200ea;
+    }
+
+    nav {
+      background-color: #3700b3;
+      padding: 0.5rem;
+      text-align: center;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      margin: 0 1rem;
+      font-weight: bold;
+    }
+
+    nav a:hover {
+      text-decoration: underline;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      border-bottom: 2px solid #6200ea;
+      padding-bottom: 0.5rem;
+    }
+
+    .prediction-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .prediction-item {
+      background: #fff;
+      border: 1px solid #ddd;
+      margin-bottom: 0.5rem;
+      padding: 1rem;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .numbers span {
+      display: inline-block;
+      width: 30px;
+      height: 30px;
+      line-height: 30px;
+      text-align: center;
+      border-radius: 50%;
+      color: white;
+      font-weight: bold;
+      margin-right: 5px;
+    }
+
+    /* Ball colors */
+    .ball-10 {
+      background-color: #fbc400;
+    }
+
+    .ball-20 {
+      background-color: #69c8f2;
+    }
+
+    .ball-30 {
+      background-color: #ff7272;
+    }
+
+    .ball-40 {
+      background-color: #aaaaaa;
+    }
+
+    .ball-45 {
+      background-color: #b0d840;
+    }
+
+    .meta {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .delete-btn {
+      background-color: #ff4444;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .delete-btn:hover {
+      background-color: #cc0000;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div style="width: 100px;"></div> <!-- Spacer -->
+    <h1>🧞‍♂️ 마이페이지</h1>
+    <div class="auth-buttons">
+      <span>{{ user.username }}님</span>
+      <a href="#" onclick="logout()">로그아웃</a>
+    </div>
+  </header>
+
+  <nav>
+    <a href="/">대시보드</a>
+    <a href="/analysis">분석</a>
+    <a href="/history">당첨내역</a>
+    <a href="/mypage">마이페이지</a>
+  </nav>
+
+  <div class="container">
+    <h2>나의 예측 번호</h2>
+    <ul class="prediction-list">
+      {% for pred in predictions %}
+      <li class="prediction-item">
+        <div>
+          <div class="meta">{{ pred.round_no }}회차 예측 | 생성일: {{ pred.created_at }}</div>
+          <div class="numbers">
+            {% for n in [pred.num1, pred.num2, pred.num3, pred.num4, pred.num5, pred.num6] %}
+            <span class="
+                            {% if n <= 10 %}ball-10{% elif n <= 20 %}ball-20{% elif n <= 30 %}ball-30{% elif n <= 40 %}ball-40{% else %}ball-45{% endif %}
+                        ">{{ n }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        <form action="/delete_prediction/{{ pred.id }}" method="post" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+          <button type="submit" class="delete-btn">삭제</button>
+        </form>
+      </li>
+      {% else %}
+      <p>생성된 예측 번호가 없습니다.</p>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <script>
+    function logout() {
+      document.cookie = "access_token=; Max-Age=0; path=/";
+      window.location.href = "/";
+    }
+  </script>
+</body>
+
+</html>

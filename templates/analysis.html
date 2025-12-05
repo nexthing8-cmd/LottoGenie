@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로또지니 분석</title>
+  <link rel="icon" type="image/png" href="/static/favicon.png">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f9;
+      color: #333;
+    }
+
+    header {
+      background-color: #6200ea;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    nav {
+      background-color: #3700b3;
+      padding: 0.5rem;
+      text-align: center;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      margin: 0 1rem;
+      font-weight: bold;
+    }
+
+    nav a:hover {
+      text-decoration: underline;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      border-bottom: 2px solid #6200ea;
+      padding-bottom: 0.5rem;
+    }
+
+    .chart-container {
+      position: relative;
+      margin-bottom: 2rem;
+      height: 400px;
+      width: 100%;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>🧞‍♂️ 로또지니 분석</h1>
+  </header>
+
+  <nav>
+    <a href="/">대시보드</a>
+    <a href="/analysis">분석</a>
+  </nav>
+
+  <div class="container">
+    <h2>번호별 출현 빈도 (전체)</h2>
+    <div class="chart-container">
+      <canvas id="freqChart"></canvas>
+    </div>
+
+    <h2>최근 당첨 번호 흐름 (최근 20회)</h2>
+    <div class="chart-container">
+      <canvas id="trendChart"></canvas>
+    </div>
+  </div>
+
+  <div id="chartData" data-freq='{{ freq_data | tojson | safe }}' data-trend='{{ trend_data | tojson | safe }}'
+    style="display:none;">
+  </div>
+
+  <script>
+    // Get data from DOM to avoid IDE linting errors with Jinja2 syntax in JS
+    const chartDataEl = document.getElementById('chartData');
+    const freqData = JSON.parse(chartDataEl.dataset.freq);
+    const trendData = JSON.parse(chartDataEl.dataset.trend);
+
+    // Frequency Data
+    const freqLabels = Object.keys(freqData);
+    const freqValues = Object.values(freqData);
+
+    // Trend Data
+    const trendLabels = trendData.map(d => d.round_no + '회');
+
+    // Prepare datasets for scatter/line chart
+    // We want to show 6 numbers per round.
+    // Chart.js scatter expects x, y. x=round, y=number.
+    const scatterData = [];
+    trendData.forEach(d => {
+      for (let i = 1; i <= 6; i++) {
+        scatterData.push({ x: d.round_no, y: d[`num${i}`] });
+      }
+    });
+
+    // Color mapping helper
+    function getColor(n) {
+      if (n <= 10) return '#fbc400'; // Yellow
+      if (n <= 20) return '#69c8f2'; // Blue
+      if (n <= 30) return '#ff7272'; // Red
+      if (n <= 40) return '#aaaaaa'; // Gray
+      return '#b0d840'; // Green
+    }
+
+    // 1. Frequency Chart
+    const ctxFreq = document.getElementById('freqChart').getContext('2d');
+    new Chart(ctxFreq, {
+      type: 'bar',
+      data: {
+        labels: freqLabels,
+        datasets: [{
+          label: '출현 횟수',
+          data: freqValues,
+          backgroundColor: freqLabels.map(n => getColor(parseInt(n))),
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+
+    // 2. Trend Chart
+    const ctxTrend = document.getElementById('trendChart').getContext('2d');
+    new Chart(ctxTrend, {
+      type: 'scatter',
+      data: {
+        datasets: [{
+          label: '당첨 번호',
+          data: scatterData,
+          backgroundColor: scatterData.map(d => getColor(d.y)),
+          pointRadius: 6,
+          pointHoverRadius: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'linear',
+            position: 'bottom',
+            title: { display: true, text: '회차' },
+            ticks: { stepSize: 1 }
+          },
+          y: {
+            min: 1,
+            max: 45,
+            title: { display: true, text: '번호' }
+          }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function (context) {
+                return context.raw.x + '회: ' + context.raw.y;
+              }
+            }
+          }
+        }
+      }
+    });
+  </script>
+
+</body>
+
+</html>

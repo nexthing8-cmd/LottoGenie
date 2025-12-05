@@ -1,0 +1,17 @@
+requests
+beautifulsoup4
+pandas
+matplotlib
+fastapi
+uvicorn
+jinja2
+pymysql
+python-dotenv
+tensorflow
+numpy
+scikit-learn
+sqlalchemy
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+bcrypt==4.0.1
