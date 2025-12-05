@@ -121,6 +121,47 @@ async def delete_prediction(id: int, request: Request):
     
     return RedirectResponse(url="/mypage", status_code=303)
 
+@app.post("/update_memo/{id}")
+async def update_memo(id: int, request: Request, memo: str = Form(None)):
+    user = await get_current_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('UPDATE my_predictions SET memo = %s WHERE id = %s AND user_id = %s', (memo, id, user['id']))
+    conn.commit()
+    conn.close()
+    
+    return RedirectResponse(url="/mypage", status_code=303)
+
+@app.post("/delete_account")
+async def delete_account(request: Request):
+    user = await get_current_user_from_cookie(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        
+        # 1. Delete associated predictions
+        cursor.execute('DELETE FROM my_predictions WHERE user_id = %s', (user['id'],))
+        
+        # 2. Delete user
+        cursor.execute('DELETE FROM users WHERE id = %s', (user['id'],))
+        
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail="Failed to delete account")
+    finally:
+        conn.close()
+    
+    response = RedirectResponse(url="/", status_code=303)
+    response.delete_cookie("access_token")
+    return response
+
 @app.get("/history", response_class=HTMLResponse)
 async def history_page(request: Request, page: int = 1):
     user = await get_current_user_from_cookie(request)

@@ -1,5 +1,6 @@
 import sqlite3
 from src.database import get_connection
+from src.notifier import send_message
 
 def get_pending_predictions():
     """Retrieves predictions that haven't been checked yet."""
@@ -59,6 +60,8 @@ def run_auditor(round_no=None):
     else:
         print(f"Found {len(pending)} pending predictions.")
     
+    results_summary = []
+    
     for pred in pending:
         pred_id = pred['id']
         r_no = pred['round_no']
@@ -70,8 +73,33 @@ def run_auditor(round_no=None):
             rank = calculate_rank(my_nums, win_nums, bonus)
             update_prediction_rank(pred_id, rank)
             print(f"Prediction {pred_id} for round {r_no}: {rank}")
+            
+            if rank != "낙첨": # 당첨된 경우만 알림? 아니면 전체? 사용자는 "당첨 확인 시"라고 했음. 낙첨도 결과이긴 함.
+                # 하지만 보통 당첨된 것만 기뻐서 알리고 싶을 듯. 또는 전체 요약.
+                # "예측 번호 생성 시 또는 당첨 확인 시" -> 당첨 확인 결과 전체를 알려주는 게 좋을 듯.
+                # 하지만 너무 많으면 문제. 
+                # 일단 상위 당첨(1~5등)만 리스트업하고, 총 낙첨 수 요약하는 방식이 좋겠음.
+                results_summary.append(f"{r_no}회차 ({rank})")
+                
         else:
             print(f"Round {r_no} results not yet available.")
+            
+    if results_summary:
+        # Send notification
+        try:
+            # Group by rank or just list?
+            # If too many, trunk.
+            unique_results = {}
+            for res in results_summary:
+                unique_results[res] = unique_results.get(res, 0) + 1
+            
+            msg_lines = ["🎰 당첨 확인 완료"]
+            for key, count in unique_results.items():
+                msg_lines.append(f"- {key}: {count}건")
+                
+            send_message("\n".join(msg_lines))
+        except Exception as e:
+            print(f"Notification failed: {e}")
 
 if __name__ == "__main__":
     run_auditor()

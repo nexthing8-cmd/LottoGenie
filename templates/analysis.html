@@ -1,80 +1,34 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>로또지니 분석</title>
-  <link rel="icon" type="image/png" href="/static/favicon.png">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body {
-      font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f4f4f9;
-      color: #333;
-    }
+{% block title %}로또지니 분석{% endblock %}
 
-    header {
-      background-color: #6200ea;
-      color: white;
-      padding: 1rem;
-      text-align: center;
-    }
+{% block header_title %}🧞‍♂️ 로또지니 분석{% endblock %}
 
-    nav {
-      background-color: #3700b3;
-      padding: 0.5rem;
-      text-align: center;
-    }
-
-    nav a {
-      color: white;
-      text-decoration: none;
-      margin: 0 1rem;
-      font-weight: bold;
-    }
-
-    nav a:hover {
-      text-decoration: underline;
-    }
-
-    .container {
-      max-width: 1000px;
-      margin: 2rem auto;
-      padding: 1rem;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-
-    h2 {
-      border-bottom: 2px solid #6200ea;
-      padding-bottom: 0.5rem;
-    }
-
+{% block styles %}
+<style>
     .chart-container {
       position: relative;
       margin-bottom: 2rem;
       height: 400px;
       width: 100%;
     }
-  </style>
-</head>
+    
+    /* Ensure container is responsive */
+    .container {
+        max-width: 1000px; /* Override base max-width if needed, or stick to 800px? Analysis usually needs more width */
+    }
+    
+    /* Override base container max-width for charts */
+    @media (min-width: 850px) {
+        .container {
+            max-width: 1000px;
+        }
+    }
+</style>
+{% endblock %}
 
-<body>
-
-  <header>
-    <h1>🧞‍♂️ 로또지니 분석</h1>
-  </header>
-
-  <nav>
-    <a href="/">대시보드</a>
-    <a href="/analysis">분석</a>
-  </nav>
-
-  <div class="container">
+{% block content %}
+<div class="container">
     <h2>번호별 출현 빈도 (전체)</h2>
     <div class="chart-container">
       <canvas id="freqChart"></canvas>
@@ -84,13 +38,16 @@
     <div class="chart-container">
       <canvas id="trendChart"></canvas>
     </div>
-  </div>
+</div>
 
-  <div id="chartData" data-freq='{{ freq_data | tojson | safe }}' data-trend='{{ trend_data | tojson | safe }}'
+<div id="chartData" data-freq='{{ freq_data | tojson | safe }}' data-trend='{{ trend_data | tojson | safe }}'
     style="display:none;">
-  </div>
+</div>
+{% endblock %}
 
-  <script>
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
     // Get data from DOM to avoid IDE linting errors with Jinja2 syntax in JS
     const chartDataEl = document.getElementById('chartData');
     const freqData = JSON.parse(chartDataEl.dataset.freq);
@@ -186,8 +143,5 @@
         }
       }
     });
-  </script>
-
-</body>
-
-</html>
+</script>
+{% endblock %}

@@ -64,6 +64,7 @@ def init_db():
                     rank_val VARCHAR(20) DEFAULT '미추첨',
                     user_id INT,
                     created_at VARCHAR(30),
+                    memo TEXT,
                     FOREIGN KEY (user_id) REFERENCES users(id)
                 )
             ''')

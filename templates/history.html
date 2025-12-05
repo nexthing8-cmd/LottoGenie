@@ -1,75 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>로또지니 - 당첨내역</title>
-  <link rel="icon" type="image/png" href="/static/favicon.png">
-  <style>
-    body {
-      font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f4f4f9;
-      color: #333;
-    }
+{% block title %}로또지니 - 당첨내역{% endblock %}
 
-    header {
-      background-color: #6200ea;
-      color: white;
-      padding: 1rem;
-      text-align: center;
-    }
-
-    nav {
-      background-color: #3700b3;
-      padding: 0.5rem;
-      text-align: center;
-    }
-
-    nav a {
-      color: white;
-      text-decoration: none;
-      margin: 0 1rem;
-      font-weight: bold;
-    }
-
-    nav a:hover {
-      text-decoration: underline;
-    }
-
-    .container {
-      max-width: 800px;
-      margin: 2rem auto;
-      padding: 1rem;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-
-    h2 {
-      border-bottom: 2px solid #6200ea;
-      padding-bottom: 0.5rem;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-    }
-
-    th,
-    td {
-      text-align: center;
-      padding: 0.8rem;
-      border-bottom: 1px solid #ddd;
-    }
-
-    th {
-      background-color: #f0f0f0;
-    }
-
+{% block styles %}
+<style>
     .numbers span {
       display: inline-block;
       width: 25px;
@@ -94,27 +28,6 @@
       position: absolute;
       left: -10px;
       top: 0;
-    }
-
-    /* Ball colors */
-    .ball-10 {
-      background-color: #fbc400;
-    }
-
-    .ball-20 {
-      background-color: #69c8f2;
-    }
-
-    .ball-30 {
-      background-color: #ff7272;
-    }
-
-    .ball-40 {
-      background-color: #aaaaaa;
-    }
-
-    .ball-45 {
-      background-color: #b0d840;
     }
 
     .pagination {
@@ -142,27 +55,11 @@
     .pagination a:hover:not(.active) {
       background-color: #f0f0f0;
     }
-  </style>
-</head>
+</style>
+{% endblock %}
 
-<body>
-
-  <header>
-    <h1>🧞‍♂️ 로또지니 당첨내역</h1>
-  </header>
-
-  <nav>
-    <a href="/">대시보드</a>
-    <a href="/analysis">분석</a>
-    <a href="/history">당첨내역</a>
-    {% if user %}
-    <a href="/mypage">마이페이지</a>
-    {% else %}
-    <a href="/login">로그인</a>
-    {% endif %}
-  </nav>
-
-  <div class="container">
+{% block content %}
+<div class="container">
     <h2>역대 당첨 결과</h2>
     <table>
       <thead>
@@ -178,13 +75,14 @@
           <td>{{ item.round_no }}회</td>
           <td>{{ item.draw_date }}</td>
           <td class="numbers">
+            <!-- Inline ball class logic or re-define macro. Using inline for variety/simplicity if no macro used elsewhere -->
             {% for n in [item.num1, item.num2, item.num3, item.num4, item.num5, item.num6] %}
             <span class="
-                            {% if n <= 10 %}ball-10{% elif n <= 20 %}ball-20{% elif n <= 30 %}ball-30{% elif n <= 40 %}ball-40{% else %}ball-45{% endif %}
+                            {% if n <= 10 %}ball-yellow{% elif n <= 20 %}ball-blue{% elif n <= 30 %}ball-red{% elif n <= 40 %}ball-gray{% else %}ball-green{% endif %}
                         ">{{ n }}</span>
             {% endfor %}
             <span class="bonus 
-                            {% if item.bonus <= 10 %}ball-10{% elif item.bonus <= 20 %}ball-20{% elif item.bonus <= 30 %}ball-30{% elif item.bonus <= 40 %}ball-40{% else %}ball-45{% endif %}
+                            {% if item.bonus <= 10 %}ball-yellow{% elif item.bonus <= 20 %}ball-blue{% elif item.bonus <= 30 %}ball-red{% elif item.bonus <= 40 %}ball-gray{% else %}ball-green{% endif %}
                         ">{{ item.bonus }}</span>
           </td>
         </tr>
@@ -201,15 +99,14 @@
       {% for p in range(1, total_pages + 1) %}
       {% if p == page %}
       <a href="#" class="active">{{ p }}</a>
-      {% elif p >= page - 2 and p <= page + 2 %} <a href="/history?page={{ p }}">{{ p }}</a>
-        {% endif %}
-        {% endfor %}
+      {% elif p >= page - 2 and p <= page + 2 %}
+      <a href="/history?page={{ p }}">{{ p }}</a>
+      {% endif %}
+      {% endfor %}
 
-        {% if page < total_pages %} <a href="/history?page={{ page + 1 }}">다음</a>
-          {% endif %}
+      {% if page < total_pages %}
+      <a href="/history?page={{ page + 1 }}">다음</a>
+      {% endif %}
     </div>
-  </div>
-
-</body>
-
-</html>
+</div>
+{% endblock %}

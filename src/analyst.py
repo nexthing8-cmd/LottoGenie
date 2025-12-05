@@ -1,19 +1,26 @@
 import sqlite3
 import random
 import numpy as np
-import pandas as pd
 import os
 from datetime import datetime
 from collections import Counter
 from src.database import get_connection
+from src.notifier import send_message
 
 # Suppress TensorFlow warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import tensorflow as tf
-from tensorflow.keras.models import Sequential
+from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import LSTM, Dense, Dropout, Input
 
-from sklearn.preprocessing import MultiLabelBinarizer
+
+
+# Constants for Hyperparameters and Model Path
+MODEL_PATH = 'data/lotto_model.keras'
+SEQUENCE_LENGTH = 10
+EPOCHS_NEW = 100
+EPOCHS_UPDATE = 10
+BATCH_SIZE = 32
 
 def load_history():
     """Loads all history data from the database."""
@@ -33,16 +40,23 @@ def prepare_data(history_data, sequence_length=5):
         nums = sorted([v for v in row.values()])
         draws.append(nums)
     
-    # Multi-hot encoding
-    mlb = MultiLabelBinarizer(classes=range(1, 46))
-    encoded_draws = mlb.fit_transform(draws)
+    # Multi-hot encoding manually
+    encoded_draws = []
+    for draw in draws:
+        encoded = [0] * 45
+        for num in draw:
+            if 1 <= num <= 45:
+                encoded[num-1] = 1
+        encoded_draws.append(encoded)
+    
+    encoded_draws = np.array(encoded_draws)
     
     X, y = [], []
     for i in range(len(encoded_draws) - sequence_length):
         X.append(encoded_draws[i:i+sequence_length])
         y.append(encoded_draws[i+sequence_length])
         
-    return np.array(X), np.array(y), mlb
+    return np.array(X).astype('float32'), np.array(y).astype('float32')
 
 def create_model(input_shape):
     """Creates an LSTM model."""
@@ -58,47 +72,58 @@ def create_model(input_shape):
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     return model
 
-def generate_numbers_ml(history_data, num_sets=5):
-    """Generates prediction numbers using LSTM model."""
-    print("Training ML model... (This may take a while)")
-    
-    sequence_length = 10 # Look back 10 rounds
-    X, y, mlb = prepare_data(history_data, sequence_length)
+def train_model(history_data, fine_tune=True):
+    """Trains or fine-tunes the LSTM model."""
+    print("Preparing data for training...")
+    X, y = prepare_data(history_data, SEQUENCE_LENGTH)
     
     if len(X) == 0:
         print("Not enough data to train model.")
-        return []
+        return
 
-    # Create and train model
-    # Note: In a real production system, we would save/load the model.
-    # For this demo, we retrain or use a lightweight approach.
-    # To save time, we'll use fewer epochs.
-    model = create_model((sequence_length, 45))
-    model.fit(X, y, epochs=10, batch_size=32, verbose=0)
+    if fine_tune and os.path.exists(MODEL_PATH):
+        print(f"Loading existing model from {MODEL_PATH} for fine-tuning...")
+        model = load_model(MODEL_PATH)
+        epochs = EPOCHS_UPDATE
+    else:
+        print("Creating and training new model...")
+        model = create_model((SEQUENCE_LENGTH, 45))
+        epochs = EPOCHS_NEW
     
-    # Predict next round
-    last_sequence = X[-1].reshape(1, sequence_length, 45)
+    print(f"Training model for {epochs} epochs...")
+    model.fit(X, y, epochs=epochs, batch_size=BATCH_SIZE, verbose=1)
+    
+    model.save(MODEL_PATH)
+    print(f"Model saved to {MODEL_PATH}")
+
+def generate_numbers_ml(history_data):
+    """Generates prediction numbers using LSTM model (Prediction Only)."""
+    # Just load and predict. No training here.
+    
+    if not os.path.exists(MODEL_PATH):
+        print(f"Model not found at {MODEL_PATH}. Cannot predict.")
+        return []
+        
+    print(f"Loading model from {MODEL_PATH}...")
+    model = load_model(MODEL_PATH)
+    
+    # Prepare data just for the last sequence
+    # optimizing prepare_data is possible but reusing is fine for now
+    X, y = prepare_data(history_data, SEQUENCE_LENGTH)
+    
+    if len(X) == 0:
+        return []
+        
+    last_sequence = X[-1].reshape(1, SEQUENCE_LENGTH, 45)
     
     predictions = []
     
-    # Generate multiple sets by adding some noise or sampling
-    # Since the model is deterministic for a given input, we need a way to vary predictions.
-    # Approach: Get probabilities, then sample based on them or pick top N with noise.
-    
     predicted_probs = model.predict(last_sequence, verbose=0)[0]
     
-    # Strategy: Weighted random sampling based on predicted probabilities
-    # Normalize probabilities to sum to 1 for sampling (if needed, but random.choices handles weights)
-    
-    # We want to generate 'num_sets' unique combinations
     attempts = 0
+    num_sets = 5
     while len(predictions) < num_sets and attempts < num_sets * 20:
         attempts += 1
-        
-        # Sample 6 numbers based on probabilities
-        # We use the probabilities as weights.
-        # Note: classes are 1-45. predicted_probs index 0 corresponds to 1.
-        
         candidates = np.random.choice(
             range(1, 46), 
             size=6, 
@@ -129,8 +154,11 @@ def save_predictions(round_no, predictions, user_id=None):
     conn.close()
     print(f"Saved {len(predictions)} predictions for round {round_no} (User ID: {user_id})")
 
-def run_analyst(user_id=None):
-    """Main function to run the analyst agent."""
+def run_analyst(user_id=None, mode='predict'):
+    """
+    Main function to run the analyst agent.
+    mode: 'predict' (default) or 'train'
+    """
     # 1. Identify the target round (next round)
     conn = get_connection()
     cursor = conn.cursor()
@@ -149,12 +177,27 @@ def run_analyst(user_id=None):
     # 2. Load data
     history = load_history()
     
+    if mode == 'train':
+        train_model(history)
+        # After training, we might also want to predict or just exit.
+        # Let's predict too if it's the weekly run.
+        # But weekly run calls predict as well?
+        # Let's just return if training only.
+        print("Training completed.")
+    
     # 3. Generate
     predictions = generate_numbers_ml(history)
     print(f"Generated: {predictions}")
     
     # 4. Save
     save_predictions(target_round, predictions, user_id)
+    
+    # 5. Notify
+    try:
+        msg = f"✅ 예측 완료 (회차: {target_round})\n생성된 번호: {predictions}"
+        send_message(msg)
+    except Exception as e:
+        print(f"Notification failed: {e}")
 
 if __name__ == "__main__":
     run_analyst()

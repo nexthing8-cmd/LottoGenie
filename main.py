@@ -20,6 +20,9 @@ def main():
     # check --round <n>
     check_parser = subparsers.add_parser("check", help="Check results")
     check_parser.add_argument("--round", type=int, help="Round to check (optional, checks all pending)")
+
+    # train (new)
+    train_parser = subparsers.add_parser("train", help="Train/Fine-tune the model")
     
     # web
     web_parser = subparsers.add_parser("web", help="Start Web UI")
@@ -61,6 +64,10 @@ def main():
         
     elif args.command == "check":
         run_auditor(round_no=args.round)
+
+    elif args.command == "train":
+        print("Starting model training...")
+        run_analyst(mode='train')
         
     elif args.command == "web":
         print("Starting Web UI...")

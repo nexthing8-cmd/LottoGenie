@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}로또지니 (LottoGenie){% endblock %}</title>
+  <link rel="icon" type="image/png" href="/static/favicon.png">
+
+  <!-- Open Graph / Facebook / KakaoTalk -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://lottogenie.nexthing8.com/">
+  <meta property="og:title" content="로또지니 - AI 로또 당첨 예측">
+  <meta property="og:description" content="AI가 예측하는 이번 주 로또 당첨 번호! 로또지니에서 확인하고 대박의 주인공이 되어보세요.">
+  <meta property="og:image" content="https://lottogenie.nexthing8.com/static/og_preview.png?v=3">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+
+  <style>
+    body {
+      font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f9;
+      color: #333;
+    }
+
+    header {
+      background-color: #6200ea;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      position: relative;
+    }
+
+    header h1 {
+        margin: 0;
+        font-size: 1.5rem;
+    }
+
+    .auth-links {
+      position: absolute;
+      right: 1rem;
+      top: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .auth-links a {
+      color: white;
+      text-decoration: none;
+      margin-left: 10px;
+      font-weight: bold;
+      border: 1px solid transparent;
+      padding: 5px 10px;
+      border-radius: 4px;
+    }
+
+    .auth-links a:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+    }
+
+    nav {
+      background-color: #3700b3;
+      padding: 0.5rem;
+      text-align: center;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      margin: 0 1rem;
+      font-weight: bold;
+    }
+
+    nav a:hover {
+      text-decoration: underline;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      border-bottom: 2px solid #6200ea;
+      padding-bottom: 0.5rem;
+    }
+
+    /* Common Button Styles */
+    .btn {
+      display: inline-block;
+      background: #6200ea;
+      color: white;
+      padding: 0.5rem 1rem;
+      text-decoration: none;
+      border-radius: 4px;
+      cursor: pointer;
+      border: none;
+      font-size: 1rem;
+    }
+
+    .btn:hover {
+      background: #3700b3;
+    }
+
+    .btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    /* Common Ball Styles */
+    .ball {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      line-height: 40px;
+      border-radius: 50%;
+      text-align: center;
+      margin: 0 5px;
+      font-weight: 900;
+      font-size: 18px;
+      color: white;
+      text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.4);
+      box-shadow: inset -5px -5px 10px rgba(0, 0, 0, 0.2), 2px 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .ball-yellow { background: #fbc400; }
+    .ball-blue { background: #69c8f2; }
+    .ball-red { background: #ff7272; }
+    .ball-gray { background: #aaaaaa; }
+    .ball-green { background: #b0d840; }
+
+    /* For smaller balls in history/mypage if needed, or use specific classes */
+    .ball-small {
+        width: 30px;
+        height: 30px;
+        line-height: 30px;
+        font-size: 14px;
+    }
+    
+    /* Mapping for legacy classes if any: ball-10 -> ball-yellow etc. */
+    .ball-10 { background-color: #fbc400; }
+    .ball-20 { background-color: #69c8f2; }
+    .ball-30 { background-color: #ff7272; }
+    .ball-40 { background-color: #aaaaaa; }
+    .ball-45 { background-color: #b0d840; }
+
+    /* Common Table Styles */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    th, td {
+      padding: 0.75rem;
+      text-align: center; /* Default to center */
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #f4f4f9;
+    }
+
+  </style>
+  {% block styles %}{% endblock %}
+</head>
+
+<body>
+
+  <header>
+    <h1>{% block header_title %}🧞‍♂️ 로또지니 (LottoGenie){% endblock %}</h1>
+    <div class="auth-links">
+      {% if user %}
+      <span>{{ user.username }}님</span>
+      <a href="#" onclick="logout()">로그아웃</a>
+      {% else %}
+      <a href="/login">로그인</a>
+      <a href="/register">회원가입</a>
+      {% endif %}
+    </div>
+  </header>
+
+  <nav>
+    <a href="/">대시보드</a>
+    <a href="/analysis">분석</a>
+    <a href="/history">당첨내역</a>
+    {% if user %}
+    <a href="/mypage">마이페이지</a>
+    {% endif %}
+  </nav>
+
+  {% block content %}
+  {% endblock %}
+
+  <script>
+    function logout() {
+      document.cookie = "access_token=; path=/; max-age=0";
+      window.location.href = "/";
+    }
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+
+</html>

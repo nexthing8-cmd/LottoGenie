@@ -19,7 +19,12 @@ python main.py load
 echo "[$(date)] Checking Previous Results..."
 python main.py check
 
-# 5. Generate New Predictions
+# 5. Train Model
+# Fine-tunes the model with the latest data
+echo "[$(date)] Training/Updating Model..."
+python main.py train
+
+# 6. Generate New Predictions
 # Generates predictions for the next round
 echo "[$(date)] Generating New Predictions..."
 python main.py predict

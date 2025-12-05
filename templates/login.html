@@ -1,22 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>로그인 - 로또지니</title>
-  <link rel="icon" type="image/png" href="/static/favicon.png">
-  <style>
-    body {
-      font-family: 'Pretendard', sans-serif;
-      background: #f4f4f9;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
+{% block title %}로그인 - 로또지니{% endblock %}
 
+{% block header_title %}🧞‍♂️ 로그인{% endblock %}
+
+{% block styles %}
+<style>
     .card {
       background: white;
       padding: 2rem;
@@ -24,6 +13,7 @@
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       width: 100%;
       max-width: 400px;
+      margin: 2rem auto; /* Center naturally */
     }
 
     h2 {
@@ -40,7 +30,7 @@
       box-sizing: border-box;
     }
 
-    button {
+    button[type="submit"] {
       width: 100%;
       padding: 0.8rem;
       background: #6200ea;
@@ -52,7 +42,7 @@
       margin-top: 1rem;
     }
 
-    button:hover {
+    button[type="submit"]:hover {
       background: #3700b3;
     }
 
@@ -73,10 +63,10 @@
       margin-bottom: 1rem;
       display: none;
     }
-  </style>
-</head>
+</style>
+{% endblock %}
 
-<body>
+{% block content %}
   <div class="card">
     <h2>로그인</h2>
     <p id="error-msg" class="error"></p>
@@ -92,7 +82,9 @@
       <a href="/">메인으로 돌아가기</a>
     </div>
   </div>
+{% endblock %}
 
+{% block scripts %}
   <script>
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -106,9 +98,7 @@
 
         if (response.ok) {
           const data = await response.json();
-          // Store token in cookie or localStorage (using cookie for simplicity with FastAPI OAuth2)
-          // Actually, FastAPI OAuth2PasswordBearer expects header. 
-          // For simple web app, we can set a cookie manually.
+          // Store token in cookie or localStorage
           document.cookie = `access_token=${data.access_token}; path=/; max-age=1800`;
           window.location.href = '/';
         } else {
@@ -121,6 +111,4 @@
       }
     });
   </script>
-</body>
-
-</html>
+{% endblock %}
