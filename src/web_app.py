@@ -163,22 +163,36 @@ async def delete_account(request: Request):
     return response
 
 @app.get("/history", response_class=HTMLResponse)
-async def history_page(request: Request, page: int = 1):
+async def history_page(request: Request, page: int = 1, limit: int = 10, search_round: Optional[int] = None):
     user = await get_current_user_from_cookie(request)
-    per_page = 10
-    offset = (page - 1) * per_page
     
+    # Validate limit to avoid abuse
+    if limit not in [10, 25, 50]:
+        limit = 10
+
     conn = get_connection()
     cursor = conn.cursor()
     
-    # Get total count
-    cursor.execute('SELECT COUNT(*) as count FROM history')
-    total_count = cursor.fetchone()['count']
-    total_pages = math.ceil(total_count / per_page)
-    
-    # Get items
-    cursor.execute('SELECT * FROM history ORDER BY round_no DESC LIMIT %s OFFSET %s', (per_page, offset))
-    history_items = cursor.fetchall()
+    if search_round:
+        # Search specific round
+        cursor.execute('SELECT * FROM history WHERE round_no = %s', (search_round,))
+        history_items = cursor.fetchall()
+        total_pages = 1
+        current_page = 1
+        total_count = len(history_items)
+    else:
+        # Normal pagination
+        offset = (page - 1) * limit
+        
+        # Get total count
+        cursor.execute('SELECT COUNT(*) as count FROM history')
+        total_count = cursor.fetchone()['count']
+        total_pages = math.ceil(total_count / limit)
+        current_page = page
+        
+        # Get items
+        cursor.execute('SELECT * FROM history ORDER BY round_no DESC LIMIT %s OFFSET %s', (limit, offset))
+        history_items = cursor.fetchall()
     
     conn.close()
     
@@ -186,8 +200,10 @@ async def history_page(request: Request, page: int = 1):
         "request": request, 
         "user": user, 
         "history": history_items,
-        "page": page,
-        "total_pages": total_pages
+        "page": current_page,
+        "total_pages": total_pages,
+        "limit": limit,
+        "search_round": search_round if search_round else ""
     })
 
 @app.get("/analysis", response_class=HTMLResponse)
