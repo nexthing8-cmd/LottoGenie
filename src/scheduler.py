@@ -65,9 +65,9 @@ def weekly_job():
         print("Step 4: Training Model...")
         run_analyst(mode='train')
         
-        # 5. Generate New Predictions
-        print("Step 5: Generating New Predictions...")
-        run_analyst()
+        # 5. Generate New Predictions (for Test User)
+        print("Step 5: Generating New Predictions for Test User (ID: 6)...")
+        run_analyst(user_id=6)
         
         print("Success: Weekly job completed.")
         

@@ -88,7 +88,7 @@ async def read_root(request: Request):
     # If user is logged in, show their predictions.
     recent_predictions = []
     if user:
-        cursor.execute('SELECT * FROM my_predictions WHERE user_id = %s ORDER BY created_at DESC LIMIT 5', (user['id'],))
+        cursor.execute('SELECT * FROM my_predictions WHERE user_id = %s AND is_deleted = 0 ORDER BY created_at DESC LIMIT 5', (user['id'],))
         recent_predictions = cursor.fetchall()
     
     conn.close()
@@ -109,7 +109,7 @@ async def mypage(request: Request):
     
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM my_predictions WHERE user_id = %s ORDER BY created_at DESC', (user['id'],))
+    cursor.execute('SELECT * FROM my_predictions WHERE user_id = %s AND is_deleted = 0 ORDER BY created_at DESC', (user['id'],))
     predictions = cursor.fetchall()
     conn.close()
     
@@ -123,7 +123,7 @@ async def delete_prediction(id: int, request: Request):
     
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute('DELETE FROM my_predictions WHERE id = %s AND user_id = %s', (id, user['id']))
+    cursor.execute('UPDATE my_predictions SET is_deleted = 1 WHERE id = %s AND user_id = %s', (id, user['id']))
     conn.commit()
     conn.close()
     
@@ -153,11 +153,11 @@ async def delete_account(request: Request):
     try:
         cursor = conn.cursor()
         
-        # 1. Delete associated predictions
-        cursor.execute('DELETE FROM my_predictions WHERE user_id = %s', (user['id'],))
+        # 1. Soft delete associated predictions
+        cursor.execute('UPDATE my_predictions SET is_deleted = 1 WHERE user_id = %s', (user['id'],))
         
-        # 2. Delete user
-        cursor.execute('DELETE FROM users WHERE id = %s', (user['id'],))
+        # 2. Soft delete user
+        cursor.execute('UPDATE users SET is_deleted = 1 WHERE id = %s', (user['id'],))
         
         conn.commit()
     except Exception as e:

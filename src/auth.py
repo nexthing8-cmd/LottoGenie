@@ -64,6 +64,8 @@ def authenticate_user(username, password):
         return False
     if not verify_password(password, user['password_hash']):
         return False
+    if user.get('is_deleted', 0) == 1:
+        return False
     return user
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
