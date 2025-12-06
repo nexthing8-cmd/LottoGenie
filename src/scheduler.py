@@ -54,7 +54,7 @@ def weekly_job():
         print("Step 2: Collecting Winning Stores...")
         current_last_round = get_last_round()
         if current_last_round > 0:
-            start_store_check = max(1, current_last_round - 5)
+            start_store_check = current_last_round
             collect_winning_stores(start_round=start_store_check, end_round=current_last_round)
         
         # 3. Check Predictions (Auditor)
