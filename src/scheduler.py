@@ -45,10 +45,10 @@ def weekly_job():
         # 1. Update Data (Collector)
         print("Step 1: Running Collector...")
         last_round = get_last_round()
-        # Ensure we cover potential gaps or new rounds
-        # Collector checks existing rounds smartly, so checking a wide range is safe but effectively checks "missing" ones
+        # Optimization: Start checking from the last known round to find new data
+        start_round = max(1, last_round)
         target_end = last_round + 10 if last_round > 0 else 1200 
-        run_collector(start_round=1, end_round=target_end)
+        run_collector(start_round=start_round, end_round=target_end)
         
         # 2. Update Winning Stores
         print("Step 2: Collecting Winning Stores...")
