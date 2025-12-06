@@ -33,9 +33,10 @@ CREATE TABLE IF NOT EXISTS my_predictions (
     rank_val VARCHAR(20),
     matched_count INT,
     bonus_matched BOOLEAN,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     memo TEXT,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT 0,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS winning_stores (

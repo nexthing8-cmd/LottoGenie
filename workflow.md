@@ -582,7 +582,26 @@ Docker 기반의 배포 환경과 주간 자동화 스케줄러를 구축했습�
 
 - **기능**: 회차별 1등 당첨자 수의 추이를 보여주는 선형 차트(Line Chart) 추가.
 - **UI**: 초기 로딩 시 최근 20회차 데이터를 보여주며, 줌/팬 기능을 통해 전체 데이터 탐색 가능.
-- **데이터**: 우측 상단에 "총 1등 당첨자 수" 합계 표시.
+- **데이터**: 우측 상단에
+
+## Implementation Status (2025-12-06)
+
+- **Documentation Sync**:
+
+  - `data/schema.sql`: Updated with `prizes`, `winning_stores` tables and `is_deleted` columns.
+  - `PRD.md`: Added sections for Soft Delete, Time Lock, and Winner Count Chart.
+  - `README.md`: Added Docker deployment guide, Log checking, and Manual Scheduler instructions.
+  - `workflow.md`: Updated to reflect current state.
+
+- **Completed Features**:
+  - Soft Delete (User/Prediction)
+  - Test User Automation (ID 6)
+  - Winner Count Analysis Chart
+  - Prediction Time Lock (Sat 19:30-21:30)
+  - Winning Store Details in History
+  - Scheduler Optimization & Logging Fixes
+
+**Project State**: Stable, Deployed to Docker, Feature Complete per v1.3 requirements.
 
 ### 2. 예측 생성 제한 (Time Lock)
 

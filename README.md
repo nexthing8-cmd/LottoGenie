@@ -49,9 +49,39 @@ LottoGenie는 다음과 같은 주요 컴포넌트로 구성되어 있습니다:
 
 과거 당첨 번호 데이터 및 당첨금 정보를 수집합니다.
 
+## 🚀 Deployment (Docker)
+
+### 1. Build and Run
+
 ```bash
-python main.py load --from 1 --to 1200
+docker-compose up --build -d
 ```
+
+### 2. Check Logs
+
+- **Web App**: `docker logs -f lottogenie-web-1`
+- **Scheduler**: `docker logs -f lottogenie-scheduler-1`
+- **File Logs**: The scheduler also writes to `./logs/lottogenie_YYYY-MM-DD.log` (mounted to `/var/log/lottogenie`).
+
+### 3. Manual Scheduler Execution (One-off)
+
+If the scheduler missed a run or needs to be forced:
+
+```bash
+# Inside Container (Recommended)
+docker exec -it lottogenie-scheduler-1 python src/scheduler.py
+
+# Or using the test script (Local)
+python tests/run_weekly_manual.py
+```
+
+## 🛠 Features
+
+- **Prediction System**: LSTM-based lottery number prediction.
+- **Analysis**: Statistical charts including Winner Count trends.
+- **Automation**: Weekly auto-updates via Scheduler (Saturdays 21:15 KST).
+- **Security**: Soft Delete for data preservation.
+- **Operational**: Block prediction generation during draw times (Sat 19:30-21:30).
 
 ### 2. 1등 당첨점 수집 (Load Stores) - NEW
 
