@@ -167,8 +167,15 @@
               alert("예측 번호가 생성되었습니다!");
               location.reload();
             } else {
-              alert("오류가 발생했습니다. 다시 로그인해주세요.");
-              location.href = '/login';
+              const errorData = await response.json();
+              if (response.status === 400 && errorData.detail) {
+                  alert(errorData.detail);
+              } else {
+                  alert("오류가 발생했습니다. 다시 로그인해주세요.");
+                  location.href = '/login';
+              }
+              btn.disabled = false;
+              btn.innerText = "지금 생성하기";
             }
           } catch (e) {
             console.error(e);

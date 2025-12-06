@@ -68,6 +68,11 @@ header_title %}🧞‍♂️ 로또지니 분석{% endblock %} {% block styles %
   <div class="chart-container">
     <canvas id="trendChart"></canvas>
   </div>
+
+  <h2>역대 1등 당첨자 수 (추세)</h2>
+  <div class="chart-container">
+    <canvas id="winnerChart"></canvas>
+  </div>
 </div>
 {% endblock %}
 
@@ -83,6 +88,9 @@ header_title %}🧞‍♂️ 로또지니 분석{% endblock %} {% block styles %
 </script>
 <script id="trend-data" type="application/json">
   {{ trend_data | tojson | safe }}
+</script>
+<script id="winner-data" type="application/json">
+  {{ winner_data | tojson | safe }}
 </script>
 
 <script>
@@ -264,5 +272,69 @@ header_title %}🧞‍♂️ 로또지니 분석{% endblock %} {% block styles %
       },
     },
   });
+
+  // 4. Winner Count Chart
+  const winnerData = JSON.parse(document.getElementById('winner-data').textContent);
+  if (winnerData && winnerData.length > 0) {
+      const winnerLabels = winnerData.map(d => d.round_no + "회 (" + d.draw_date + ")");
+      const winnerCounts = winnerData.map(d => d.winner_count);
+
+      // Determine initial view range (last 20 rounds)
+      let minVal = undefined;
+      let maxVal = undefined;
+      if (winnerLabels.length > 20) {
+          minVal = winnerLabels[winnerLabels.length - 20];
+          maxVal = winnerLabels[winnerLabels.length - 1];
+      }
+
+      const ctxWinner = document.getElementById("winnerChart").getContext("2d");
+      new Chart(ctxWinner, {
+        type: "line",
+        data: {
+          labels: winnerLabels,
+          datasets: [{
+            label: "1등 당첨자 수",
+            data: winnerCounts,
+            borderColor: "#6200ea",
+            backgroundColor: "rgba(98, 0, 234, 0.1)",
+            borderWidth: 2,
+            pointRadius: 3,
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: "명" },
+              ticks: { precision: 0 }
+            },
+            x: {
+               min: minVal,
+               max: maxVal,
+               ticks: {
+                   maxTicksLimit: 12
+               }
+            }
+          },
+          plugins: {
+             zoom: {
+                pan: { enabled: true, mode: 'x' },
+                zoom: { 
+                  wheel: { enabled: true }, 
+                  pinch: { enabled: true }, 
+                  mode: 'x',
+                },
+                limits: {
+                    x: { minRange: 5 } 
+                }
+             }
+          }
+        }
+      });
+  }
 </script>
 {% endblock %}

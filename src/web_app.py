@@ -11,7 +11,7 @@ from urllib.parse import quote
 
 from src.database import get_connection
 from src.analyst import run_analyst
-from src.visualizer import get_frequency_data, get_trend_data
+from src.visualizer import get_frequency_data, get_trend_data, get_winner_count_data
 from src.auth import (
     create_user, authenticate_user, create_access_token, 
     get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
@@ -262,22 +262,35 @@ async def analysis(request: Request):
     freq_data = get_frequency_data()
     recent_freq_data = get_frequency_data(limit=20)
     trend_data = get_trend_data(last_n_rounds=None)  # 전체 데이터 로드
+    winner_data = get_winner_count_data()
     
     return templates.TemplateResponse("analysis.html", {
         "request": request,
         "freq_data": freq_data,
         "recent_freq_data": recent_freq_data,
         "trend_data": trend_data,
+        "winner_data": winner_data,
         "user": user
     })
 
 @app.post("/predict")
 async def generate_prediction(user: dict = Depends(get_current_user)):
-    # Now requires login (Bearer token in header)
-    # But our web frontend uses cookies.
-    # We need a dependency that checks cookie if header is missing, or frontend needs to send header.
-    # For simplicity in this demo, let's allow cookie auth for this endpoint too if called from browser JS.
-    pass
+    # Check for Saturday block time
+    now = datetime.now()
+    # Weekday: Monday is 0, Sunday is 6. Saturday is 5.
+    if now.weekday() == 5:
+        current_time = now.time()
+        start_time = datetime.strptime("19:30:00", "%H:%M:%S").time()
+        end_time = datetime.strptime("21:30:00", "%H:%M:%S").time()
+        
+        if start_time <= current_time <= end_time:
+            raise HTTPException(
+                status_code=400, 
+                detail="매주 토요일 19:30 ~ 21:30 사이에는 복권 발행 마감으로 인해 예측 번호를 생성할 수 없습니다."
+            )
+
+    run_analyst(user_id=user['id'])
+    return {"message": "Prediction generated successfully"}
 
 # Wrapper for web-based prediction call
 @app.post("/predict_web")
@@ -285,6 +298,20 @@ async def generate_prediction_web(request: Request):
     user = await get_current_user_from_cookie(request)
     if not user:
          raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # Check for Saturday block time
+    now = datetime.now()
+    if now.weekday() == 5:
+        current_time = now.time()
+        start_time = datetime.strptime("19:30:00", "%H:%M:%S").time()
+        end_time = datetime.strptime("21:30:00", "%H:%M:%S").time()
+        
+        if start_time <= current_time <= end_time:
+             # Return JSON response with error logic for frontend to handle
+             return JSONResponse(
+                 status_code=400, 
+                 content={"detail": "매주 토요일 19:30 ~ 21:30 사이에는 복권 발행 마감으로 인해 예측 번호를 생성할 수 없습니다."}
+             )
     
     print(f"User ID: {user['id']}") # Debug
     run_analyst(user_id=user['id'])

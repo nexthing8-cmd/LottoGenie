@@ -47,3 +47,20 @@ def get_trend_data(last_n_rounds=None):
     
     # Format: list of {round_no: N, num1: ..., num6: ...}
     return result_df.to_dict(orient='records')
+
+def get_winner_count_data():
+    """Returns 1st prize winner counts for trend chart."""
+    engine = get_engine()
+    query = """
+        SELECT p.round_no, h.draw_date, p.winner_count 
+        FROM prizes p 
+        JOIN history h ON p.round_no = h.round_no 
+        WHERE p.rank_no = 1 
+        ORDER BY p.round_no ASC
+    """
+    df = pd.read_sql_query(query, engine)
+    
+    if df.empty:
+        return []
+
+    return df.to_dict(orient='records')
