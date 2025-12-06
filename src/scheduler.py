@@ -48,7 +48,7 @@ def weekly_job():
         # Ensure we cover potential gaps or new rounds
         # Collector checks existing rounds smartly, so checking a wide range is safe but effectively checks "missing" ones
         target_end = last_round + 10 if last_round > 0 else 1200 
-        run_collector(start_round=1, end_round=2000)
+        run_collector(start_round=1, end_round=target_end)
         
         # 2. Update Winning Stores
         print("Step 2: Collecting Winning Stores...")

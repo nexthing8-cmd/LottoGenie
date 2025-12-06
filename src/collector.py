@@ -17,7 +17,7 @@ def fetch_lotto_data(round_no):
     """Fetches lottery data for a specific round from the website."""
     url = f"https://dhlottery.co.kr/gameResult.do?method=byWin&drwNo={round_no}"
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
 
