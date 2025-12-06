@@ -11,6 +11,12 @@ services:
       - "8000:8000"
     environment:
       - TZ=Asia/Seoul
+      - DB_HOST=${DB_HOST:-host.docker.internal}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_USER=${DB_USER:-newbie}
+      - DB_PASSWORD=${DB_PASSWORD:-password}
+      - DB_NAME=${DB_NAME:-lottodb}
+      - SECRET_KEY=${SECRET_KEY:-change_this_in_production}
     restart: always
 
   scheduler:
@@ -22,4 +28,9 @@ services:
       - ./logs:/var/log/lottogenie
     environment:
       - TZ=Asia/Seoul
+      - DB_HOST=${DB_HOST:-host.docker.internal}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_USER=${DB_USER:-newbie}
+      - DB_PASSWORD=${DB_PASSWORD:-password}
+      - DB_NAME=${DB_NAME:-lottodb}
     restart: always

@@ -86,6 +86,32 @@
 {% block content %}
 <div class="container">
     <h2>나의 예측 번호</h2>
+    <style> /* Additional styles for rank badge */
+    .rank-badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem; /* space below badge */
+      display: inline-block;
+      text-align: center;
+    }
+    .status-pending {
+      background-color: #f0f0f0;
+      color: #777;
+      border: 1px solid #ddd;
+    }
+    .status-winner {
+      background-color: #fff8e1;
+      color: #f57c00;
+      border: 1px solid #ffecb3;
+    }
+    .status-loser {
+      background-color: #ffebee;
+      color: #d32f2f;
+      border: 1px solid #ffcdd2;
+    }
+    </style>
     <ul class="prediction-list">
       {% for pred in predictions %}
       <li class="prediction-item">
@@ -101,6 +127,14 @@
         </div>
         
         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
+            {% set rank_text = pred.rank_val if pred.rank_val else '미추첨' %}
+            <span class="rank-badge 
+                {% if rank_text == '미추첨' %}status-pending
+                {% elif '등' in rank_text %}status-winner
+                {% else %}status-loser{% endif %}">
+                {{ rank_text }}
+            </span>
+
             <form action="/delete_prediction/{{ pred.id }}" method="post" onsubmit="return confirm('정말 삭제하시겠습니까?');">
               <button type="submit" class="delete-btn">삭제</button>
             </form>
