@@ -11,56 +11,75 @@ from src.collector import run_collector, collect_winning_stores, get_last_round
 from src.auditor import run_auditor
 from src.analyst import run_analyst
 
+class DualLogger:
+    def __init__(self, filepath):
+        self.terminal = sys.stdout
+        self.log = open(filepath, "a", encoding="utf-8")
+
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+        self.log.flush()
+
+    def flush(self):
+        self.terminal.flush()
+        self.log.flush()
+
 def weekly_job():
-    print(f"\n[Scheduler] Starting Weekly Job at {datetime.datetime.now()}")
-    
     # Logging Setup
     log_dir = "/var/log/lottogenie"
     os.makedirs(log_dir, exist_ok=True)
     today = datetime.datetime.now().strftime("%Y-%m-%d")
     log_file = os.path.join(log_dir, f"lottogenie_{today}.log")
     
-    # Simple file append logger
-    def log(message):
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        formatted = f"[{timestamp}] {message}"
-        print(formatted) # stdout
-        try:
-            with open(log_file, "a", encoding="utf-8") as f:
-                f.write(formatted + "\n")
-        except Exception as log_err:
-            print(f"Failed to write to log file: {log_err}")
+    # Redirect stdout and stderr to the log file
+    original_stdout = sys.stdout
+    original_stderr = sys.stderr
+    
+    sys.stdout = DualLogger(log_file)
+    sys.stderr = sys.stdout # Redirect stderr to same log
+    
+    print(f"\n[Scheduler] Starting Weekly Job at {datetime.datetime.now()}")
 
     try:
         # 1. Update Data (Collector)
-        log("Step 1: Running Collector...")
+        print("Step 1: Running Collector...")
         last_round = get_last_round()
+        # Ensure we cover potential gaps or new rounds
+        # Collector checks existing rounds smartly, so checking a wide range is safe but effectively checks "missing" ones
         target_end = last_round + 10 if last_round > 0 else 1200 
         run_collector(start_round=1, end_round=2000)
         
         # 2. Update Winning Stores
-        log("Step 2: Collecting Winning Stores...")
+        print("Step 2: Collecting Winning Stores...")
         current_last_round = get_last_round()
         if current_last_round > 0:
             start_store_check = max(1, current_last_round - 5)
             collect_winning_stores(start_round=start_store_check, end_round=current_last_round)
         
         # 3. Check Predictions (Auditor)
-        log("Step 3: Checking Predictions...")
+        print("Step 3: Checking Predictions...")
         run_auditor()
         
         # 4. Train Model
-        log("Step 4: Training Model...")
+        print("Step 4: Training Model...")
         run_analyst(mode='train')
         
         # 5. Generate New Predictions
-        log("Step 5: Generating New Predictions...")
+        print("Step 5: Generating New Predictions...")
         run_analyst()
         
-        log("Success: Weekly job completed.")
+        print("Success: Weekly job completed.")
         
     except Exception as e:
-        log(f"Error: {e}")
+        print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
+        
+    finally:
+        # Restore stdout/stderr
+        sys.stdout = original_stdout
+        sys.stderr = original_stderr
 
 def main():
     print("[Scheduler] Service Started. Waiting for Schedule...")
