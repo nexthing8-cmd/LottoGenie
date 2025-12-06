@@ -69,7 +69,10 @@ header_title %}🧞‍♂️ 로또지니 분석{% endblock %} {% block styles %
     <canvas id="trendChart"></canvas>
   </div>
 
-  <h2>역대 1등 당첨자 수 (추세)</h2>
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <h2>역대 1등 당첨자 수 (추세)</h2>
+    <span id="total-winner-count" style="font-weight: bold; color: #6200ea;"></span>
+  </div>
   <div class="chart-container">
     <canvas id="winnerChart"></canvas>
   </div>
@@ -278,6 +281,10 @@ header_title %}🧞‍♂️ 로또지니 분석{% endblock %} {% block styles %
   if (winnerData && winnerData.length > 0) {
       const winnerLabels = winnerData.map(d => d.round_no + "회 (" + d.draw_date + ")");
       const winnerCounts = winnerData.map(d => d.winner_count);
+
+      // Calculate and display total
+      const totalWinners = winnerCounts.reduce((a, b) => a + b, 0);
+      document.getElementById('total-winner-count').textContent = `총 1등 당첨자 수 : ${totalWinners.toLocaleString()}명`;
 
       // Determine initial view range (last 20 rounds)
       let minVal = undefined;
