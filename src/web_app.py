@@ -7,6 +7,7 @@ import uvicorn
 from datetime import datetime, timedelta
 import math
 from typing import Optional
+from urllib.parse import quote
 
 from src.database import get_connection
 from src.analyst import run_analyst
@@ -213,15 +214,59 @@ async def history_page(request: Request, page: int = 1, limit: int = 10, search_
         "search_round": search_round if search_round else ""
     })
 
+@app.get("/history/{round_no}", response_class=HTMLResponse)
+async def history_detail(request: Request, round_no: int):
+    user = await get_current_user_from_cookie(request)
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Get round history
+    cursor.execute('SELECT * FROM history WHERE round_no = %s', (round_no,))
+    history_item = cursor.fetchone()
+    
+    if not history_item:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Round not found")
+        
+    # Get prizes
+    cursor.execute('SELECT * FROM prizes WHERE round_no = %s ORDER BY rank_no ASC', (round_no,))
+    prizes = cursor.fetchall()
+    
+    # Get winning stores
+    cursor.execute('SELECT * FROM winning_stores WHERE round_no = %s', (round_no,))
+    stores = cursor.fetchall()
+    
+    # Add Naver Map URL for each store
+    for store in stores:
+        if store.get('address'):
+            # 주소만 사용해서 네이버 지도 검색 URL 생성 (주소가 더 정확한 위치 정보 제공)
+            search_query = store.get('address', '').strip()
+            store['map_url'] = f"https://map.naver.com/v5/search/{quote(search_query)}"
+        else:
+            store['map_url'] = None
+    
+    conn.close()
+    
+    return templates.TemplateResponse("history_detail.html", {
+        "request": request,
+        "user": user,
+        "item": history_item,
+        "prizes": prizes,
+        "stores": stores
+    })
+
 @app.get("/analysis", response_class=HTMLResponse)
 async def analysis(request: Request):
     user = await get_current_user_from_cookie(request)
     freq_data = get_frequency_data()
-    trend_data = get_trend_data()
+    recent_freq_data = get_frequency_data(limit=20)
+    trend_data = get_trend_data(last_n_rounds=None)  # 전체 데이터 로드
     
     return templates.TemplateResponse("analysis.html", {
         "request": request,
         "freq_data": freq_data,
+        "recent_freq_data": recent_freq_data,
         "trend_data": trend_data,
         "user": user
     })

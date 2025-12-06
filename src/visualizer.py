@@ -13,11 +13,14 @@ def get_history_df():
     # For this simple app, letting it persist or GC is fine.
     return df
 
-def get_frequency_data(top_n=45):
-    """Returns frequency data for all numbers."""
+def get_frequency_data(top_n=45, limit=None):
+    """Returns frequency data for all numbers, optionally limited to recent rounds."""
     df = get_history_df()
     if df.empty:
         return {}
+    
+    if limit:
+        df = df.sort_values('round_no', ascending=False).head(limit)
         
     # Melt the dataframe to get all numbers in one column
     nums = pd.concat([df[f'num{i}'] for i in range(1, 7)])
@@ -26,14 +29,21 @@ def get_frequency_data(top_n=45):
     # Return as dict: {number: count}
     return counts.to_dict()
 
-def get_trend_data(last_n_rounds=20):
-    """Returns recent winning numbers for trend chart."""
+def get_trend_data(last_n_rounds=None):
+    """Returns winning numbers for trend chart.
+    If last_n_rounds is None, returns all data.
+    Otherwise returns only the last N rounds."""
     df = get_history_df()
     if df.empty:
         return []
-        
-    recent_df = df.sort_values('round_no', ascending=False).head(last_n_rounds)
-    recent_df = recent_df.sort_values('round_no', ascending=True) # Oldest to newest for chart
+    
+    if last_n_rounds is None:
+        # Return all data
+        result_df = df.sort_values('round_no', ascending=True) # Oldest to newest for chart
+    else:
+        # Return only last N rounds
+        recent_df = df.sort_values('round_no', ascending=False).head(last_n_rounds)
+        result_df = recent_df.sort_values('round_no', ascending=True) # Oldest to newest for chart
     
     # Format: list of {round_no: N, num1: ..., num6: ...}
-    return recent_df.to_dict(orient='records')
+    return result_df.to_dict(orient='records')

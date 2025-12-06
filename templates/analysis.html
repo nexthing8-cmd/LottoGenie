@@ -1,147 +1,268 @@
-{% extends "base.html" %}
-
-{% block title %}로또지니 분석{% endblock %}
-
-{% block header_title %}🧞‍♂️ 로또지니 분석{% endblock %}
-
-{% block styles %}
+{% extends "base.html" %} {% block title %}로또지니 분석{% endblock %} {% block
+header_title %}🧞‍♂️ 로또지니 분석{% endblock %} {% block styles %}
 <style>
-    .chart-container {
-      position: relative;
-      margin-bottom: 2rem;
-      height: 400px;
-      width: 100%;
-    }
-    
-    /* Ensure container is responsive */
+  .chart-container {
+    position: relative;
+    margin-bottom: 2rem;
+    height: 400px;
+    width: 100%;
+  }
+
+  /* Ensure container is responsive */
+  .container {
+    max-width: 1000px; /* Override base max-width if needed, or stick to 800px? Analysis usually needs more width */
+  }
+
+  /* Override base container max-width for charts */
+  @media (min-width: 850px) {
     .container {
-        max-width: 1000px; /* Override base max-width if needed, or stick to 800px? Analysis usually needs more width */
+      max-width: 1000px;
     }
-    
-    /* Override base container max-width for charts */
-    @media (min-width: 850px) {
-        .container {
-            max-width: 1000px;
-        }
+  }
+
+  /* Mobile responsive for charts */
+  @media (max-width: 768px) {
+    .chart-container {
+      height: 300px;
+      margin-bottom: 1.5rem;
     }
+
+    h2 {
+      font-size: 1.2rem;
+    }
+
+    p {
+      font-size: 0.85rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .chart-container {
+      height: 250px;
+      margin-bottom: 1rem;
+    }
+
+    h2 {
+      font-size: 1rem;
+    }
+  }
 </style>
-{% endblock %}
+{% endblock %} 
 
 {% block content %}
 <div class="container">
-    <h2>번호별 출현 빈도 (전체)</h2>
-    <div class="chart-container">
-      <canvas id="freqChart"></canvas>
-    </div>
+  <h2>번호별 출현 빈도 (전체)</h2>
+  <div class="chart-container">
+    <canvas id="freqChart"></canvas>
+  </div>
 
-    <h2>최근 당첨 번호 흐름 (최근 20회)</h2>
-    <div class="chart-container">
-      <canvas id="trendChart"></canvas>
-    </div>
-</div>
+  <h2>최근 20회 번호별 출현 비율</h2>
+  <div class="chart-container">
+    <canvas id="pieChart"></canvas>
+  </div>
 
-<div id="chartData" data-freq='{{ freq_data | tojson | safe }}' data-trend='{{ trend_data | tojson | safe }}'
-    style="display:none;">
+  <h2>당첨 번호 흐름 (전체)</h2>
+  <p style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem">
+    ※ 마우스 휠로 확대/축소, 드래그로 이동 가능 (전체 회차 데이터 표시)
+  </p>
+  <div class="chart-container">
+    <canvas id="trendChart"></canvas>
+  </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.2.1"></script>
+<script id="freq-data" type="application/json">
+  {{ freq_data | tojson | safe }}
+</script>
+<script id="recent-data" type="application/json">
+  {{ recent_freq_data | tojson | safe }}
+</script>
+<script id="trend-data" type="application/json">
+  {{ trend_data | tojson | safe }}
+</script>
+
 <script>
-    // Get data from DOM to avoid IDE linting errors with Jinja2 syntax in JS
-    const chartDataEl = document.getElementById('chartData');
-    const freqData = JSON.parse(chartDataEl.dataset.freq);
-    const trendData = JSON.parse(chartDataEl.dataset.trend);
+  // Parse data from hidden JSON blocks to avoid linter errors with Jinja syntax
+  const freqData = JSON.parse(document.getElementById('freq-data').textContent);
+  const recentData = JSON.parse(document.getElementById('recent-data').textContent);
+  const trendData = JSON.parse(document.getElementById('trend-data').textContent);
 
-    // Frequency Data
-    const freqLabels = Object.keys(freqData);
-    const freqValues = Object.values(freqData);
+  // Frequency Data (All)
+  const freqLabels = Object.keys(freqData);
+  const freqValues = Object.values(freqData);
 
-    // Trend Data
-    const trendLabels = trendData.map(d => d.round_no + '회');
+  // Recent Frequency Data (Pie)
+  // Filter to show only numbers that appeared
+  const recentLabelsRaw = Object.keys(recentData);
+  const recentValues = Object.values(recentData);
 
-    // Prepare datasets for scatter/line chart
-    // We want to show 6 numbers per round.
-    // Chart.js scatter expects x, y. x=round, y=number.
-    const scatterData = [];
-    trendData.forEach(d => {
-      for (let i = 1; i <= 6; i++) {
-        scatterData.push({ x: d.round_no, y: d[`num${i}`] });
-      }
-    });
+  // Calculate Total for Percentages
+  const recentTotal = recentValues.reduce((a, b) => a + b, 0);
+  const recentLabels = recentLabelsRaw.map((label, index) => {
+    const percent = ((recentValues[index] / recentTotal) * 100).toFixed(1);
+    return `${label} (${percent}%)`;
+  });
 
-    // Color mapping helper
-    function getColor(n) {
-      if (n <= 10) return '#fbc400'; // Yellow
-      if (n <= 20) return '#69c8f2'; // Blue
-      if (n <= 30) return '#ff7272'; // Red
-      if (n <= 40) return '#aaaaaa'; // Gray
-      return '#b0d840'; // Green
+  // Trend Data
+  const trendLabels = trendData.map((d) => d.round_no + "회");
+
+  // Prepare datasets for scatter/line chart
+  // We want to show 6 numbers per round.
+  // Chart.js scatter expects x, y. x=round, y=number.
+  const scatterData = [];
+  trendData.forEach((d) => {
+    for (let i = 1; i <= 6; i++) {
+      scatterData.push({ x: d.round_no, y: d[`num${i}`] });
     }
+  });
 
-    // 1. Frequency Chart
-    const ctxFreq = document.getElementById('freqChart').getContext('2d');
-    new Chart(ctxFreq, {
-      type: 'bar',
-      data: {
-        labels: freqLabels,
-        datasets: [{
-          label: '출현 횟수',
+  // Calculate initial zoom range (show last 20 rounds)
+  let initialMinX = null;
+  let initialMaxX = null;
+  if (trendData.length > 0) {
+    const maxRound = Math.max(...trendData.map(d => d.round_no));
+    initialMaxX = maxRound;
+    initialMinX = Math.max(trendData[0].round_no, maxRound - 19); // Show last 20 rounds
+  }
+
+  // Color mapping helper
+  function getColor(n) {
+    if (n <= 10) return "#fbc400"; // Yellow
+    if (n <= 20) return "#69c8f2"; // Blue
+    if (n <= 30) return "#ff7272"; // Red
+    if (n <= 40) return "#aaaaaa"; // Gray
+    return "#b0d840"; // Green
+  }
+
+  // 1. Frequency Chart
+  const ctxFreq = document.getElementById("freqChart").getContext("2d");
+  new Chart(ctxFreq, {
+    type: "bar",
+    data: {
+      labels: freqLabels,
+      datasets: [
+        {
+          label: "출현 횟수",
           data: freqValues,
-          backgroundColor: freqLabels.map(n => getColor(parseInt(n))),
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            beginAtZero: true
-          }
-        }
-      }
-    });
-
-    // 2. Trend Chart
-    const ctxTrend = document.getElementById('trendChart').getContext('2d');
-    new Chart(ctxTrend, {
-      type: 'scatter',
-      data: {
-        datasets: [{
-          label: '당첨 번호',
-          data: scatterData,
-          backgroundColor: scatterData.map(d => getColor(d.y)),
-          pointRadius: 6,
-          pointHoverRadius: 8
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            type: 'linear',
-            position: 'bottom',
-            title: { display: true, text: '회차' },
-            ticks: { stepSize: 1 }
-          },
-          y: {
-            min: 1,
-            max: 45,
-            title: { display: true, text: '번호' }
-          }
+          backgroundColor: freqLabels.map((n) => getColor(parseInt(n))),
+          borderWidth: 1,
         },
-        plugins: {
-          tooltip: {
-            callbacks: {
-              label: function (context) {
-                return context.raw.x + '회: ' + context.raw.y;
-              }
-            }
-          }
-        }
-      }
-    });
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+        },
+      },
+    },
+  });
+
+  // 2. Pie Chart (Recent 20)
+  const ctxPie = document.getElementById("pieChart").getContext("2d");
+  new Chart(ctxPie, {
+    type: "pie",
+    data: {
+      labels: recentLabels,
+      datasets: [
+        {
+          data: recentValues,
+          backgroundColor: recentLabelsRaw.map((n) => getColor(parseInt(n))),
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: "right",
+        },
+      },
+    },
+  });
+
+  // 3. Trend Chart
+  const ctxTrend = document.getElementById("trendChart").getContext("2d");
+  new Chart(ctxTrend, {
+    type: "scatter",
+    data: {
+      datasets: [
+        {
+          label: "당첨 번호",
+          data: scatterData,
+          backgroundColor: scatterData.map((d) => getColor(d.y)),
+          pointRadius: 6,
+          pointHoverRadius: 8,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "nearest",
+        axis: "x",
+        intersect: false,
+      },
+      scales: {
+        x: {
+          type: "linear",
+          position: "bottom",
+          title: { display: true, text: "회차" },
+          ticks: {
+            stepSize: 1,
+            autoSkip: true,
+            maxTicksLimit: 20,
+          },
+          min: initialMinX,
+          max: initialMaxX,
+        },
+        y: {
+          min: 1,
+          max: 45,
+          title: { display: true, text: "번호" },
+        },
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              return context.raw.x + "회: " + context.raw.y;
+            },
+          },
+        },
+        zoom: {
+          limits: {
+            x: { 
+              minRange: 5,
+              min: trendData.length > 0 ? Math.min(...trendData.map(d => d.round_no)) : undefined,
+              max: trendData.length > 0 ? Math.max(...trendData.map(d => d.round_no)) : undefined,
+            },
+          },
+          zoom: {
+            wheel: {
+              enabled: true,
+            },
+            pinch: {
+              enabled: true,
+            },
+            mode: "x",
+          },
+          pan: {
+            enabled: true,
+            mode: "x",
+          },
+        },
+      },
+    },
+  });
 </script>
 {% endblock %}

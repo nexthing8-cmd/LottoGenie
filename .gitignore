@@ -16,11 +16,13 @@ data/*.keras
 data/*.h5
 *.log
 *_log.txt
+logs/
+*.sqlite3
+*.db
 
 # OS
 .DS_Store
 
 # Agent Work Files (Ignore)
 next_workflow_instructions.md
-error_report.md
 # workflow.md and PRD.md are allowed

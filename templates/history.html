@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}로또지니 - 당첨내역{% endblock %}
+{% block title %}로또지니 - 당첨정보{% endblock %}
 
 {% block styles %}
 <style>
@@ -55,12 +55,70 @@
     .pagination a:hover:not(.active) {
       background-color: #f0f0f0;
     }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .numbers span {
+        width: 22px;
+        height: 22px;
+        line-height: 22px;
+        font-size: 0.7rem;
+        margin-right: 1px;
+      }
+
+      .bonus {
+        margin-left: 8px;
+      }
+
+      .bonus::before {
+        left: -8px;
+        font-size: 0.9rem;
+      }
+
+      /* Search and limit form adjustments */
+      div[style*="display: flex"] {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      div[style*="display: flex"] form {
+        width: 100%;
+      }
+
+      input[type="number"],
+      select {
+        width: 100%;
+        padding: 0.5rem;
+        box-sizing: border-box;
+      }
+
+      button[type="submit"] {
+        width: 100%;
+        margin-top: 0.5rem;
+        padding: 0.6rem;
+      }
+
+      .pagination {
+        flex-wrap: wrap;
+        gap: 0.3rem;
+      }
+
+      .pagination a {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+      }
+
+      table {
+        font-size: 0.85rem;
+      }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container">
     <h2>역대 당첨 결과</h2>
+    <p style="font-size: 0.9rem; color: #666; margin-bottom: 1rem;">회차를 클릭하면 상세 당첨금 및 1등 배출점 정보를 확인할 수 있습니다.</p>
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <!-- Limit Selector -->
         <form id="limitForm" action="/history" method="get">
@@ -93,7 +151,7 @@
       </thead>
       <tbody>
         {% for item in history %}
-        <tr>
+        <tr onclick="window.location.href='/history/{{ item.round_no }}'" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#f9f9f9'" onmouseout="this.style.backgroundColor='transparent'">
           <td>{{ item.round_no }}회</td>
           <td>{{ item.draw_date }}</td>
           <td class="numbers">

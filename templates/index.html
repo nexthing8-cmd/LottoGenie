@@ -15,6 +15,26 @@
         /* Ensuring balls look good in table */
         vertical-align: middle;
     }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+        .result-card {
+            padding: 0.75rem;
+        }
+
+        .result-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        table {
+            font-size: 0.85rem;
+        }
+
+        th, td {
+            padding: 0.5rem 0.3rem;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -45,38 +65,49 @@
 
     {% if prizes %}
     <h3>당첨금 정보</h3>
+    <div class="table-wrapper">
     <table style="margin-bottom: 2rem;">
         <thead>
             <tr>
                 <th>순위</th>
-                <th>총 당첨금액</th>
-                <th>당첨자 수</th>
-                <th>1게임당 당첨금액</th>
-                <th>비고</th>
+                <th style="text-align: right;">총 당첨금액</th>
+                <th style="text-align: right;">당첨자 수</th>
+                <th style="text-align: right;">1게임당 당첨금액</th>
+                <th style="text-align: center;">비고</th>
             </tr>
         </thead>
         <tbody>
             {% for prize in prizes %}
             <tr>
                 <td>{{ prize.rank_no }}등</td>
-                <td>{{ "{:,}".format(prize.total_price) }}원</td>
-                <td>{{ "{:,}".format(prize.winner_count) }}명</td>
-                <td>{{ "{:,}".format(prize.win_amount) }}원</td>
-                <td>
-                    {% if prize.rank_no == 1 %}
-                        {% if latest_result.first_prize_auto or latest_result.first_prize_manual %}
-                            (자동 {{ latest_result.first_prize_auto }}, 수동 {{ latest_result.first_prize_manual }}, 반자동 {{ latest_result.first_prize_semi_auto }})
-                        {% else %}
-                            -
-                        {% endif %}
+                <td style="text-align: right;">{{ "{:,}".format(prize.total_price) }}원</td>
+                <td style="text-align: right;">{{ "{:,}".format(prize.winner_count) }}명</td>
+                <td style="text-align: right;">{{ "{:,}".format(prize.win_amount) }}원</td>
+                {% if loop.first %}
+                <td rowspan="{{ prizes|length }}" style="vertical-align: middle; text-align: center; width: 100px;">
+                    {% if latest_result.first_prize_auto or latest_result.first_prize_manual %}
+                        <div style="display: flex; flex-direction: column; gap: 0.3rem; align-items: center; justify-content: center; min-height: 100%;">
+                            <div style="font-weight: bold;">1등</div>
+                            {% if latest_result.first_prize_auto %}
+                            <div>자동{{ latest_result.first_prize_auto }}</div>
+                            {% endif %}
+                            {% if latest_result.first_prize_manual %}
+                            <div>수동{{ latest_result.first_prize_manual }}</div>
+                            {% endif %}
+                            {% if latest_result.first_prize_semi_auto %}
+                            <div>반자동{{ latest_result.first_prize_semi_auto }}</div>
+                            {% endif %}
+                        </div>
                     {% else %}
-                        -
+                        <div style="display: flex; align-items: center; justify-content: center; min-height: 100%;">-</div>
                     {% endif %}
                 </td>
+                {% endif %}
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
     {% endif %}
 
     <h2>예측 번호 생성</h2>
@@ -89,6 +120,7 @@
     {% endif %}
 
     <h2>최근 예측 내역</h2>
+    <div class="table-wrapper">
     <table>
       <thead>
         <tr>
@@ -114,6 +146,7 @@
         {% endfor %}
       </tbody>
     </table>
+    </div>
 </div>
 {% endblock %}
 
